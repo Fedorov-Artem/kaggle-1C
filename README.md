@@ -1,8 +1,8 @@
 # coursera-1C
 Task.
 In the project I solve a kaggle challenge. Its brief description is available on the kaggle site (https://www.kaggle.com/c/competitive-data-science-predict-future-sales/data).
-The time-series dataset consisting of daily sales data, kindly provided by one of the largest Russian software firms - 1C Company. The task is to forecast the total amount of products sold in every shop for the test set. The list of shops and products (they are called items) slightly changes every month.
-Most of the items sold are CDs/DVDs with some information - either a computer game, movie, music, programs, etc.
+This is a time-series dataset consisting of daily sales data, kindly provided by one of the largest Russian software firms - 1C Company. The task is to forecast the total amount of products sold in every shop for the test set. The list of shops and products (they are called items) slightly changes every month.
+Most of the items are CDs/DVDs with some information - either a computer game, movie, music, programs, etc.
 
 Input data.
 I have information about total sales in each shop per day from 01.2013 to 10.2015 and need to predict total sales for the next month, 11.2015. For the test period I have a list of items, each of them was sold at least once. I’m also provided with a list of shops that were selling in November 2015.
