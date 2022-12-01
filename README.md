@@ -33,8 +33,8 @@ In the test set, there is one shop that is works second month after working for 
 
 # Code and files.
 Solution itself consists of 4 files with python code:
-*features_from_text.py - code to process text descriptions of items and categories and to prepare items_and_vectors.csv file with features made from text;
-*feature_engineering.py - code to prepare features from the sales data and to join them with the features made from text;
-*all_models_run.py - code to define and train all the first level models;
-*second_level.py - code to build a second-level model and export the final prediction.
+* features_from_text.py - code to process text descriptions of items and categories and to prepare items_and_vectors.csv file with features made from text;
+* feature_engineering.py - code to prepare features from the sales data and to join them with the features made from text;
+* all_models_run.py - code to define and train all the first level models;
+* second_level.py - code to build a second-level model and export the final prediction.
 
