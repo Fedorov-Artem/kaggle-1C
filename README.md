@@ -1,34 +1,40 @@
-# coursera-1C
-Task.
-In the project I solve a kaggle challenge. Its brief description is available on the kaggle site (https://www.kaggle.com/c/competitive-data-science-predict-future-sales/data).
-This is a time-series dataset consisting of daily sales data, kindly provided by one of the largest Russian software firms - 1C Company. The task is to forecast the total amount of products sold in every shop for the test set. The list of shops and products (they are called items) slightly changes every month.
-Most of the items are CDs/DVDs with some information - either a computer game, movie, music, programs, etc.
+# Task
+In this project I solve a kaggle challenge. Its brief description is available on the [kaggle site](https://www.kaggle.com/c/competitive-data-science-predict-future-sales/data).
+>You are provided with daily historical sales data. The task is to forecast the total amount of products sold in every shop for the test set. Note that the list of shops and products slightly changes every month. Creating a robust model that can handle such situations is part of the challenge.
 
-Input data.
-I have information about total sales in each shop per day from 01.2013 to 10.2015 and need to predict total sales for the next month, 11.2015. For the test period I have a list of items, each of them was sold at least once. I’m also provided with a list of shops that were selling in November 2015.
-In the data set there are about 20 thousand items divided into about 80 item categories, and a list of about 60 different shops. I get a brief text description for each item, category and shop.
-.
-It is important to note that the task is to predict the target value clipped to [0,20].
+This is a time-series dataset with some additional metadata information - brief test descriptions of every shop, product (they are called "items") and product category. Yes, this is real world sales data. As for the test set, there is a full list of items sold at least in one shop during that month and a full list of shops that worked at that time. The task is to predict real sales value per item per shop clipped to [0,20].
 
-Solution overview.
-I am given per-day data and my task is to predict total sales for the whole month. So, first of all I aggregate data to get per-month totals and for each month add rows with zero sales for items not sold in this shop, but sold in another shop the same month. Then I build models capable of predicting sales for a given month using data from the previous periods. I build several such models to predict data for four periods and use all of them for cross-validation.
-To achieve best possible results, I build several model types: for target values clipped to [0, 25], to [0, 10], and to [0, 50]. Then I use predictions made by these models as features and train a linear regression to make a final prediction.
+# Solution overview
+The main idea of this solution is to aggregate data to get per-month totals from per-day data and for each month add rows with zero sales for items not sold in this shop, but sold in another shop the same month. Then it becomes possible to create features from sales during previous periods, like sales of each item in the same shop last month, average sales of the same item in all shops last month, average sales of items of the same category in the shop, average sales of an item for the last 3 or 6 months e.t.c. Now it becomes quite logical to cross-validate the model on the data from the last month of the train set - and this is enough to build a decently working model. 
 
-Preparing features.
-Data healing. For example, I remove from the dataset shops that constantly start and stop working, as I am not asked to predict sales for such shops and they only add noise to the models. Then, I use comments in brackets in the item text description to fix categories for a number of items, e.t.c.
-I make most features from some sort of target aggregation from previous periods (months). I make features from item sales in the same shop, average item sales in all shops, average sales per category e.t.c.
-Some features are time-based, like the number of months since the item was first sold.
-Features from item name
+I used a number of tricks to significantly improve the model's performance, and will briefly describe all of them here in the readme.
 
-Special features.
-Probably the most challenging task for this data set is to predict sales for new items that were never sold before. The most problematic items are those of one of computer games categories. Such items could have either very high sales in case of a major new release or very low sales in case of a new edition of an old game. I made a feature with average sales for the new items only, per category and per shop, improved the situation, but does not solve the problem. Text-based features helped me to tackle the issue, as I have text description of new items. Major releases usually include several items with similar names, as they include versions for different platforms. I made a feature “same_text_this_month” that significantly decreased error for the new computer games.
-Another special feature is for the second month. Sales for the second month significantly depend on the day when sales of a new item began last month. If they began close to the end of the month, first month sales would be low and second month sales would be high. So, I made two features “first_day” - for the first day when item was sold this shop and “average_per_day_after_start” for average sales per day after the item was first time sold in each shop. These two features significantly decreased the loss function for second month sales.
+# Multiple models and a second level model
+To begin with, I used not just the last month, but the last 3 months for cross-validation, as results for a single month very much depend on how well sales for a several new items are predicted.
 
+And then, I built several models and then used a second-level model (linear regression) to get the final result. Cross-validation results for the three months are used as a training set for that second level model.
+As was mentioned earlier, the task is to predict the actual sales clipped to [0,20]. Most items are sold rarely and have target values below 10, while some very popular items are sold much more often than the limit of 20 units. This means, that if we clip the target to 20 the model would have no examples for results higher than 20 and would predict the target value lower than 20 even in cases when it can be predicted for sure that the actual value is much higher. Clipping the target to a value much higher than 20 would lead to the model underperforming for most items that are unpopular [the metric is RMSE]. I choose to fit three models to target values clipped to [0,10], [0,25] and [0,50]. The second of these models produces decent predictions without two other models, but performance of the second-level model is better than of any single model.
 
-Code and files.
+# Data cleaning
+Organizers intentionally left the data as is, so there is much space for data cleaning in the contest. 
+
+Two first shops in the list can be easily recognized as duplicates.  Their names start with an exclamation mark, and then there is the same text description as for two other shops. There are also items with their descriptions beginning with exclamation mark symbols.
+
+But most importantly, it turns out that there are two more "shops" that are not actual shops, but sales during some events. These "shops" never work for two months in a row, and they do not appear in the test set. Removing data for those "shops" from the train set increased the model's performance.
+
+# Special features for new items
+The most challenging task for this data set is to predict sales for new items that were never sold before. A few features with average sales for the new items only, per category and per shop, somewhat improved the situation. Another way to improve the model's prediction for new features is using text-based features, as the only thing we know about new items is their brief text description. All the features for new items were set to be always equal to zero for any item sold before, as the model performs much better on data for sales on previous months, and special features for new items do not improve predictions for other items.
+
+# Special features for items sold second month
+Prediction for second month sales significantly depend on a day when sales of a new item started previous month. If sales started close to the end of the month, data for sales last month would only consist of sales during the last few days, and that would lead to the model underestimating sales for the second month. Information on day, when sales started, is not present in aggregated per month data, but it is present in initial per day data. So, I've added a few features for second month sales, like "average sales per day in this shop" and "average sales per day in all shops", that significantly improved results.
+
+# Trick to improve predictions for new shops
+In the test set, there is one shop that is works second month after working for about two weeks previous month. Models underestimated sales in that shop as all the features for sales last month / last three months / last 6 months only had items sold for two weeks. So, for each shop and month, I've calculated the number of days that shop worked and divided all the "lag features" (made from sales in previous periods) by the actual number of days shop worked during that period.
+
+# Code and files.
 Solution itself consists of 4 files with python code:
-features_from_text.py - this code should be run first, it prepares the items_and_vectors.csv file. Text description of items and categories are only processed in here;
-feature_engineering.py - this file should be run after items_and_vectors.csv file is prepared. Here the sales data itself is processed and most features are prepared;
-all_models_run.py - code to define and train all the first level models. Model predictions are saved in *.csv files, cat_25 model predictions are already good, but I run a second-level model to get even better results;
-second_level.py - code to build a second-level model and export the final prediction.
+*features_from_text.py - code to process text descriptions of items and categories and to prepare items_and_vectors.csv file with features made from text;
+*feature_engineering.py - code to prepare features from the sales data and to join them with the features made from text;
+*all_models_run.py - code to define and train all the first level models;
+*second_level.py - code to build a second-level model and export the final prediction.
 
